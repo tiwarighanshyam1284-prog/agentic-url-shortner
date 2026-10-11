@@ -1,0 +1,67 @@
+### Run the application (green arrow on LinkShortenerApplication), then click "Run" on each request below.
+### Each request is independent. Copy a "code" from a create reply into the other requests where it says {{code}}.
+
+### 1. Health check. Expect 200 and "status": "UP"
+GET http://localhost:8080/api/v1/health
+
+### 2. Create a link with a random code. Expect 201 and a shortUrl
+POST http://localhost:8080/api/v1/links
+Content-Type: application/json
+
+{
+  "url": "https://example.com/some/long/address"
+}
+
+### 3. Create a named link. Expect 201 and shortUrl ending in /my-docs
+POST http://localhost:8080/api/v1/links
+Content-Type: application/json
+
+{
+  "url": "https://docs.oracle.com/en/java/",
+  "alias": "my-docs"
+}
+
+### 4. The same alias again. Expect 409 "alias is already in use"
+POST http://localhost:8080/api/v1/links
+Content-Type: application/json
+
+{
+  "url": "https://example.com/",
+  "alias": "my-docs"
+}
+
+### 5. A local address. Expect 400 "url host is not allowed"
+POST http://localhost:8080/api/v1/links
+Content-Type: application/json
+
+{
+  "url": "http://localhost:9000/x"
+}
+
+### 6. A link that lasts 2 seconds. Expect 201
+POST http://localhost:8080/api/v1/links
+Content-Type: application/json
+
+{
+  "url": "https://www.wikipedia.org/",
+  "alias": "short-lived",
+  "ttlSeconds": 2
+}
+
+### 7. Open the named link. Expect 302 with Location pointing to the Oracle page
+GET http://localhost:8080/my-docs
+
+### 8. Statistics for the named link. Expect totalClicks 1 (more after more opens)
+GET http://localhost:8080/api/v1/links/my-docs/stats
+
+### 9. Unknown link. Expect 404 "no such link"
+GET http://localhost:8080/nope123
+
+### 10. Disable the named link. Expect 204
+DELETE http://localhost:8080/api/v1/links/my-docs
+
+### 11. Open the disabled link. Expect 410 "link has been disabled or has expired"
+GET http://localhost:8080/my-docs
+
+### 12. Wait 3 seconds after request 6, then open short-lived. Expect 410 (expired)
+GET http://localhost:8080/short-lived
